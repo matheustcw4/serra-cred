@@ -46,12 +46,19 @@ const inputStyle = {
 };
 
 /* ---------- Regra de juros da Serra Cred ---------- */
-// Prazo (em dias úteis, seg-sáb) -> taxa de juros sobre o valor emprestado
+// Prazo (em dias úteis, seg-sáb) -> taxa de juros sobre o valor emprestado (empréstimo diário)
 const PRAZOS = [
   { dias: 11, taxa: 0.10 },
   { dias: 15, taxa: 0.15 },
   { dias: 24, taxa: 0.20 },
   { dias: 30, taxa: 0.30 },
+];
+// Prazo em semanas -> taxa de juros (empréstimo semanal, tabela própria e diferente da diária)
+const PRAZOS_SEMANAL = [
+  { dias: 1, taxa: 0.10 },
+  { dias: 2, taxa: 0.15 },
+  { dias: 3, taxa: 0.20 },
+  { dias: 4, taxa: 0.30 },
 ];
 // Juros composto aplicado sobre o saldo em aberto quando o prazo vence sem quitação
 const TAXA_ATRASO = 0.10;
@@ -1183,9 +1190,15 @@ function EmprestimoFormModal({ clientes, onClose, onSave }) {
   const [erro, setErro] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const prazoInfo = PRAZOS.find((p) => p.dias === prazoDias) || PRAZOS[0];
+  const tabelaPrazos = modalidade === 'semanal' ? PRAZOS_SEMANAL : PRAZOS;
+  const prazoInfo = tabelaPrazos.find((p) => p.dias === prazoDias) || tabelaPrazos[0];
   const numParcelas = prazoInfo.dias;
   const unidadePlural = modalidade === 'semanal' ? 'semanas' : 'dias úteis';
+
+  useEffect(() => {
+    setPrazoDias(tabelaPrazos[0].dias);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalidade]);
 
   useEffect(() => {
     setDataPrimeiraParcela(modalidade === 'semanal' ? addDays(dataEmprestimo, 7) : nextNonSunday(addOneDay(dataEmprestimo)));
@@ -1253,7 +1266,7 @@ function EmprestimoFormModal({ clientes, onClose, onSave }) {
       </Field>
       <Field label="Prazo" required>
         <div className="grid grid-cols-4 gap-2">
-          {PRAZOS.map((p) => (
+          {tabelaPrazos.map((p) => (
             <button
               key={p.dias}
               type="button"
