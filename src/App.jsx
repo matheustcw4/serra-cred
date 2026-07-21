@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard, Users, HandCoins, Receipt, Coins, CheckCircle2, Clock,
   AlertTriangle, Plus, X, Search, Store, Phone, MapPin, Edit2, Trash2,
@@ -1180,7 +1180,20 @@ function ClientesTab({ clientes, emprestimos, parcelas, onAdd, onUpdate, onDelet
 function SeletorCliente({ clientes, clienteId, onChange }) {
   const [busca, setBusca] = useState('');
   const [aberto, setAberto] = useState(false);
+  const containerRef = useRef(null);
   const clienteSelecionado = clientes.find((c) => c.id === clienteId);
+
+  useEffect(() => {
+    function aoClicarFora(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) setAberto(false);
+    }
+    document.addEventListener('mousedown', aoClicarFora);
+    document.addEventListener('touchstart', aoClicarFora);
+    return () => {
+      document.removeEventListener('mousedown', aoClicarFora);
+      document.removeEventListener('touchstart', aoClicarFora);
+    };
+  }, []);
 
   const filtrados = busca.trim()
     ? clientes.filter((c) => c.nome.toLowerCase().includes(busca.trim().toLowerCase()))
@@ -1193,7 +1206,7 @@ function SeletorCliente({ clientes, clienteId, onChange }) {
   }
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div ref={containerRef} style={{ position: 'relative' }}>
       <div className="flex items-center gap-2 rounded-xl px-3" style={{ border: `1.5px solid ${C.border}`, background: C.bg }}>
         <Search size={15} color={C.textSoft} style={{ flexShrink: 0 }} />
         <input
@@ -1207,32 +1220,30 @@ function SeletorCliente({ clientes, clienteId, onChange }) {
       </div>
 
       {aberto && (
-        <>
-          <div className="fixed inset-0" style={{ zIndex: 30 }} onClick={() => setAberto(false)} />
-          <div
-            className="absolute left-0 right-0 mt-1 rounded-xl overflow-y-auto"
-            style={{ background: C.white, border: `1.5px solid ${C.border}`, maxHeight: 220, boxShadow: '0 8px 24px rgba(0,0,0,0.15)', zIndex: 31 }}
-          >
-            {filtrados.length === 0 ? (
-              <p className="text-xs p-3" style={{ color: C.textSoft }}>Nenhum cliente encontrado.</p>
-            ) : (
-              filtrados.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => selecionar(c)}
-                  className="w-full text-left px-3 py-2.5"
-                  style={{ background: c.id === clienteId ? C.bg : 'transparent', borderBottom: `1px solid ${C.border}` }}
-                >
-                  <p className="text-sm font-semibold" style={{ color: C.text }}>{c.nome}</p>
-                  {(c.telefone || c.comercio) && (
-                    <p className="text-xs" style={{ color: C.textSoft }}>{[c.comercio, c.telefone].filter(Boolean).join(' · ')}</p>
-                  )}
-                </button>
-              ))
-            )}
-          </div>
-        </>
+        <div
+          className="absolute left-0 right-0 mt-1 rounded-xl overflow-y-auto"
+          style={{ background: C.white, border: `1.5px solid ${C.border}`, maxHeight: 220, boxShadow: '0 8px 24px rgba(0,0,0,0.15)', zIndex: 50 }}
+        >
+          {filtrados.length === 0 ? (
+            <p className="text-xs p-3" style={{ color: C.textSoft }}>Nenhum cliente encontrado.</p>
+          ) : (
+            filtrados.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => selecionar(c)}
+                className="w-full text-left px-3 py-2.5"
+                style={{ background: c.id === clienteId ? C.bg : 'transparent', borderBottom: `1px solid ${C.border}` }}
+              >
+                <p className="text-sm font-semibold" style={{ color: C.text }}>{c.nome}</p>
+                {(c.telefone || c.comercio) && (
+                  <p className="text-xs" style={{ color: C.textSoft }}>{[c.comercio, c.telefone].filter(Boolean).join(' · ')}</p>
+                )}
+              </button>
+            ))
+          )}
+        </div>
       )}
     </div>
   );
