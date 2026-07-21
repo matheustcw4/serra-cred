@@ -1177,6 +1177,67 @@ function ClientesTab({ clientes, emprestimos, parcelas, onAdd, onUpdate, onDelet
 }
 
 /* ------------------------------- Empréstimos ------------------------------- */
+function SeletorCliente({ clientes, clienteId, onChange }) {
+  const [busca, setBusca] = useState('');
+  const [aberto, setAberto] = useState(false);
+  const clienteSelecionado = clientes.find((c) => c.id === clienteId);
+
+  const filtrados = busca.trim()
+    ? clientes.filter((c) => c.nome.toLowerCase().includes(busca.trim().toLowerCase()))
+    : clientes;
+
+  function selecionar(cliente) {
+    onChange(cliente.id);
+    setBusca('');
+    setAberto(false);
+  }
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <div className="flex items-center gap-2 rounded-xl px-3" style={{ border: `1.5px solid ${C.border}`, background: C.bg }}>
+        <Search size={15} color={C.textSoft} style={{ flexShrink: 0 }} />
+        <input
+          value={aberto ? busca : (clienteSelecionado ? clienteSelecionado.nome : '')}
+          onChange={(e) => { setBusca(e.target.value); setAberto(true); }}
+          onFocus={() => { setBusca(''); setAberto(true); }}
+          placeholder="Digite pra buscar o cliente..."
+          className="flex-1 py-2.5 text-sm"
+          style={{ outline: 'none', background: 'transparent', color: C.text, border: 'none', width: '100%' }}
+        />
+      </div>
+
+      {aberto && (
+        <>
+          <div className="fixed inset-0" style={{ zIndex: 30 }} onClick={() => setAberto(false)} />
+          <div
+            className="absolute left-0 right-0 mt-1 rounded-xl overflow-y-auto"
+            style={{ background: C.white, border: `1.5px solid ${C.border}`, maxHeight: 220, boxShadow: '0 8px 24px rgba(0,0,0,0.15)', zIndex: 31 }}
+          >
+            {filtrados.length === 0 ? (
+              <p className="text-xs p-3" style={{ color: C.textSoft }}>Nenhum cliente encontrado.</p>
+            ) : (
+              filtrados.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => selecionar(c)}
+                  className="w-full text-left px-3 py-2.5"
+                  style={{ background: c.id === clienteId ? C.bg : 'transparent', borderBottom: `1px solid ${C.border}` }}
+                >
+                  <p className="text-sm font-semibold" style={{ color: C.text }}>{c.nome}</p>
+                  {(c.telefone || c.comercio) && (
+                    <p className="text-xs" style={{ color: C.textSoft }}>{[c.comercio, c.telefone].filter(Boolean).join(' · ')}</p>
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function EmprestimoFormModal({ clientes, onClose, onSave }) {
   const [clienteId, setClienteId] = useState(clientes[0]?.id || '');
   const [modalidade, setModalidade] = useState('diario');
@@ -1232,9 +1293,7 @@ function EmprestimoFormModal({ clientes, onClose, onSave }) {
   return (
     <Modal title="Novo empréstimo" onClose={onClose}>
       <Field label="Cliente" required>
-        <select style={inputStyle} value={clienteId} onChange={(e) => setClienteId(e.target.value)}>
-          {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-        </select>
+        <SeletorCliente clientes={clientes} clienteId={clienteId} onChange={setClienteId} />
       </Field>
       <Field label="Tipo de cobrança" required>
         <div className="grid grid-cols-2 gap-2">
